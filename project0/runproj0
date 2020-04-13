@@ -1,0 +1,8 @@
+#!/bin/csh
+
+#number of threads:
+foreach t ( 1 4 )
+	echo NUMT = $t
+	g++ -DNUMT=$t proj0.cpp -o proj0 -lm -fopenmp
+	./proj0
+end
