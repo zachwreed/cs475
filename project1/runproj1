@@ -1,0 +1,7 @@
+#!/bin/csh
+
+#number of threads:
+foreach t ( 1 4 8 12 16 20 24 28 32 36)
+	g++ -DNUMT=$t proj1.cpp -o proj1 -lm -fopenmp
+	./proj1
+end
