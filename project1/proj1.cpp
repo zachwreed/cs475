@@ -1,12 +1,12 @@
 /************************************************
  * Author: Zachary Reed
- * Description: Project 0 source code
- * Date: 4/6/2020
+ * Description: Project 1 Source Code
+ * Date: 4/15/2020
  * References:
  * 1.) Author: Mike Baily
  *     Title: OpenMP: Monte Carlo Simulation
  *     Description: Source code example for Project 1
- *     Date Accessed: 4/5/2020
+ *     Date Accessed: 4/14/2020
  ************************************************/
 
 #define _USE_MATH_DEFINES
@@ -151,11 +151,13 @@ int main (int argc, char *argv[]) {
             maxPerformance = megaTrialsPerSecond;
         }
         currentProb = (float)numHits/(float)NUMTRIALS;
-        sumProb += currentProb;
+        // sumProb += currentProb;
     }
 
     //Print out: (1) the number of threads, (2) the number of trials, (3) the probability of hitting the plate, and (4) the MegaTrialsPerSecond. Printing this as a single line with tabs between the numbers is nice so that you can import these lines right into Excel.
-    printf("%d\t%d\t%lf\t%lf\n", NUMT, NUMTRIALS, (sumProb /(float)NUMTRIES), maxPerformance);
+        // printf("%d\t%d\t%lf\t%lf\n", NUMT, NUMTRIALS, (sumProb /(float)NUMTRIES), maxPerformance);
+        printf("%d\t%d\t%lf\n", NUMT, NUMTRIALS, maxPerformance);
+
     return 0;
 }
 

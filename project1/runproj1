@@ -1,7 +1,15 @@
 #!/bin/csh
 
+#************************************************
+ # Author: Zachary Reed
+ # Description: Project 1 csh proj1.cpp runner
+ # Date: 4/15/2020
+#************************************************
+
 #number of threads:
-foreach t ( 1 4 8 12 16 20 24 28 32 36)
-	g++ -DNUMT=$t proj1.cpp -o proj1 -lm -fopenmp
-	./proj1
+foreach threads ( 1 2 4 8 16 32)
+	foreach numTrials ( 1 10 100 1000 10000 100000 1000000)
+		g++ -DNUMT=$threads -DNUMTRIALS=$numTrials proj1.cpp -o proj1 -lm -fopenmp
+		./proj1
+	end
 end
