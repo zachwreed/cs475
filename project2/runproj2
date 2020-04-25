@@ -1,0 +1,16 @@
+#!/bin/csh
+
+#************************************************
+ # Author: Zachary Reed
+ # Description: Project 2 csh proj2.cpp runner
+ # Date: 4/26/2020
+#************************************************
+
+#number of threads:
+echo "Threads, numNodes, megaHgt/Sec, volume"
+foreach threads (1 2 4 8 16 32 64 128 256 512)
+	foreach numNodes (4 8 16 32 64 128 256 512 1024 2048)
+		g++ -DNUMT=$threads -DNUMNODES=$numNodes proj2.cpp -o proj2 -lm -fopenmp
+		./proj2
+	end
+end
