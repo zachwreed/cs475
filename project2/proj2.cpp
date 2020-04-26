@@ -26,7 +26,12 @@
 
 // set number of nodes for grid [][]
 #ifndef NUMNODES
-    #define NUMNODES	1000
+    #define NUMNODES	10000
+#endif
+
+// how many tries to discover the maximum performance:
+#ifndef NUMTRIES
+	#define NUMTRIES	100
 #endif
 
 // Set N for x^n + y^n + z^n = 1
@@ -45,7 +50,7 @@ float Height(int iu, int iv) {
 	float r = 1. - xn - yn;
 	
     if (r < 0.) {
-	        return 0.;
+	    return 0.;
     }
 
 	float height = pow(1. - xn - yn, 1./(float)N);
@@ -61,33 +66,46 @@ int main(int argc, char *argv[]) {
 
 	// sum up the weighted heights into the variable "volume"
 	// using an OpenMP for loop and a reduction:
-	float volume = 0.;
-	
-	double time0 = omp_get_wtime();
+	float sumVolume = 0.;
+	float maxPerformance = 0.;      // must be declared outside the NUMTRIES loop
 
-    // #pragma omp parallel for default(none), shared(fullTileArea), reduction(+:volume)
-    for (int i = 0; i < NUMNODES*NUMNODES; i++) {
-	    int iu = i % NUMNODES;
-	    int iv = i / NUMNODES;
-		float adjTileArea = fullTileArea;
-	    float z = Height(iu, iv);
 
-		// If tile at corner, iu and iv at 0 or max
-		if ((iu == NUMNODES-1 || iu == 0) && (iv == NUMNODES-1 || iv == 0)) {
-			adjTileArea -= fullTileArea * 0.75;
+	// looking for the maximum performance:
+    for (int t = 0; t < NUMTRIES; t++) {
+		
+		float volume = 0.;
+		double time0 = omp_get_wtime();
+
+		#pragma omp parallel for default(none), shared(fullTileArea) reduction(+:volume)
+		for (int i = 0; i < NUMNODES*NUMNODES; i++) {
+			int iu = i % NUMNODES;
+			int iv = i / NUMNODES;
+			float adjTileArea = fullTileArea;
+			float z = Height(iu, iv);
+
+			// If tile at corner, iu and iv at 0 or max
+			if ((iu == NUMNODES-1 || iu == 0) && (iv == NUMNODES-1 || iv == 0)) {
+				adjTileArea -= fullTileArea * 0.75;
+			}
+
+			// Else if tile at edge, iu or iv at 0 or max
+			else if ((iu == NUMNODES-1 || iu == 0) || (iv == NUMNODES-1 || iv == 0)) {
+				adjTileArea -= fullTileArea * 0.5;
+			}
+			volume += 2 * (adjTileArea * z);
 		}
+		
+		double time1 = omp_get_wtime();
+		float megaHeightsPerSecond = (double)NUMNODES * NUMNODES / (time1 - time0) / 1000000.;
 
-		// Else if tile at edge, iu or iv at 0 or max
-		else if ((iu == NUMNODES-1 || iu == 0) || (iv == NUMNODES-1 || iv == 0)) {
-			adjTileArea -= fullTileArea * 0.5;
-		}
-		volume += 2 * (adjTileArea * z);
-    }
-	
-	double time1 = omp_get_wtime();
- 	float megaHeightsPerSecond = (double)NUMNODES * NUMNODES / (time1 - time0) / 1000000.;
+		if (megaHeightsPerSecond > maxPerformance) {
+            maxPerformance = megaHeightsPerSecond;
+        }
+		sumVolume += volume;
+	}
 
-	printf("%d, %d, %lf, %lf\n", NUMT, NUMNODES, megaHeightsPerSecond, volume);
+	float avgVolume = sumVolume / NUMTRIES;
+	printf("%d, %d, %lf, %lf\n", NUMT, NUMNODES, maxPerformance, avgVolume);
 
     return 0;
 }
