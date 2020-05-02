@@ -40,48 +40,43 @@
 #endif
 
 // iu,iv = 0 .. NUMNODES-1
-float Height(int iu, int iv) {
+double Height(int iu, int iv) {
 
-	float x = -1.  +  2.*(float)iu /(float)(NUMNODES-1);	// -1. to +1.
-	float y = -1.  +  2.*(float)iv /(float)(NUMNODES-1);	// -1. to +1.
+	double x = -1.  +  2.*(double)iu /(double)(NUMNODES-1);	// -1. to +1.
+	double y = -1.  +  2.*(double)iv /(double)(NUMNODES-1);	// -1. to +1.
 
-	float xn = pow(fabs(x), (double)N);
-	float yn = pow(fabs(y), (double)N);
-	float r = 1. - xn - yn;
+	double xn = pow(fabs(x), (double)N);
+	double yn = pow(fabs(y), (double)N);
+	double r = 1. - xn - yn;
 	
     if (r < 0.) {
 	    return 0.;
     }
 
-	float height = pow(1. - xn - yn, 1./(float)N);
+	double height = pow(1. - xn - yn, 1./(double)N);
 	return height;
 }
 
 int main(int argc, char *argv[]) {
-	// . . .
+	double fullTileArea = (((XMAX - XMIN)/(double)(NUMNODES-1)) * ((YMAX - YMIN)/(double)(NUMNODES-1)));
 
-	// the area of a single full-sized tile:
+	double sumVolume = 0.;
+	double maxPerformance = 0.;      // must be declared outside the NUMTRIES loop
 
-	float fullTileArea = (((XMAX - XMIN)/(float)(NUMNODES-1)) * ((YMAX - YMIN)/(float)(NUMNODES-1)));
-
-	// sum up the weighted heights into the variable "volume"
-	// using an OpenMP for loop and a reduction:
-	float sumVolume = 0.;
-	float maxPerformance = 0.;      // must be declared outside the NUMTRIES loop
-
+    omp_set_num_threads(NUMT);	// set the number of threads to use in the for-loop:`
 
 	// looking for the maximum performance:
     for (int t = 0; t < NUMTRIES; t++) {
 		
-		float volume = 0.;
+		double volume = 0.;
 		double time0 = omp_get_wtime();
 
-		#pragma omp parallel for default(none), shared(fullTileArea) reduction(+:volume)
+		#pragma omp parallel for default(none) shared(fullTileArea) reduction(+:volume)
 		for (int i = 0; i < NUMNODES*NUMNODES; i++) {
 			int iu = i % NUMNODES;
 			int iv = i / NUMNODES;
-			float adjTileArea = fullTileArea;
-			float z = Height(iu, iv);
+			double adjTileArea = fullTileArea;
+			double z = Height(iu, iv);
 
 			// If tile at corner, iu and iv at 0 or max
 			if ((iu == NUMNODES-1 || iu == 0) && (iv == NUMNODES-1 || iv == 0)) {
@@ -96,7 +91,7 @@ int main(int argc, char *argv[]) {
 		}
 		
 		double time1 = omp_get_wtime();
-		float megaHeightsPerSecond = (double)NUMNODES * NUMNODES / (time1 - time0) / 1000000.;
+		double megaHeightsPerSecond = (double)NUMNODES * NUMNODES / (time1 - time0) / 1000000.;
 
 		if (megaHeightsPerSecond > maxPerformance) {
             maxPerformance = megaHeightsPerSecond;
@@ -104,7 +99,7 @@ int main(int argc, char *argv[]) {
 		sumVolume += volume;
 	}
 
-	float avgVolume = sumVolume / NUMTRIES;
+	double avgVolume = sumVolume / NUMTRIES;
 	printf("%d, %d, %lf, %lf\n", NUMT, NUMNODES, maxPerformance, avgVolume);
 
     return 0;
