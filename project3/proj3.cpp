@@ -88,8 +88,7 @@ void setNextEnvironment() {
 // -----------------------------------------------
 
 void GrainDeer() {
-    // while(NowYear < 2026) {
-    while(1) {
+    while(NowYear < 2026) {
         // compute next Number of Deer
         int nextNumDeer;
 
@@ -120,13 +119,11 @@ void GrainDeer() {
 
         // DonePrinting barrier:
         #pragma omp barrier
-        break;
     }
 }
 
 void Grain() {
-    // while(NowYear < 2026) {
-    while(1) {
+    while(NowYear < 2026) {
         // compute a temporary next-value for this quantity
         // based on the current state of the simulation:
         float nextHeight;
@@ -154,13 +151,11 @@ void Grain() {
 
         // DonePrinting barrier:
         #pragma omp barrier
-        break;
     }
 }
 
 void Watcher() {
-    // while(NowYear < 2026) {
-    while(1) {
+    while(NowYear < 2026) {
  
         // DoneComputing barrier:
         #pragma omp barrier
@@ -185,7 +180,6 @@ void Watcher() {
 
         // DonePrinting barrier:
         #pragma omp barrier
-        break;
     }
 }
 
