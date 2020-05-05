@@ -1,0 +1,12 @@
+#!/bin/csh
+
+#************************************************
+ # Author: Zachary Reed
+ # Description: Project 2 csh proj2.cpp runner
+ # Date: 4/26/2020
+#************************************************
+
+#number of threads:
+echo "Project 3:"
+g++ proj3.cpp -o proj3 -lm -fopenmp
+./proj3
