@@ -1,7 +1,7 @@
 /************************************************
  * Author: Zachary Reed
- * Description: Project 2 Source Code
- * Date: 5/4/2020
+ * Description: Project 3 Functional Decomposition
+ * Date: 5/6/2020
  * References:
  * 1.) Author: Mike Baily
  *     Title: Functional Decomposition
@@ -37,10 +37,15 @@ const float MIDTEMP =				40.0;
 // State Global Variables 
 int	    NowYear;		// 2020 - 2025
 int	    NowMonth;		// 0 - 11
+int     NowPrintMonth;
 float	NowPrecip;		// inches of rain per month
 float	NowTemp;		// temperature this month
 float	NowHeight;		// grain height in inches
 int	    NowNumDeer;		// number of deer in the current population
+
+float NowDeerDiseaseMod;    // Represents percent of population killed
+float NowGrainDiseaseMod;   // Represents percent of height in grains killed
+
 unsigned int seed = 0;
 
 // Mutex/Barrier Global Variables
@@ -108,6 +113,11 @@ void GrainDeer() {
         if (nextNumDeer < 0) {
             nextNumDeer = 0;
         }
+
+        // Modify if Disease is Present
+        if (NowDeerDiseaseMod > .0) {
+            nextNumDeer = nextNumDeer - int(nextNumDeer * NowDeerDiseaseMod);
+        }
         
         // DoneComputing barrier:
         #pragma omp barrier
@@ -141,6 +151,11 @@ void Grain() {
             nextHeight = 0;
         }
 
+        // Modify if Disease
+        if (NowGrainDiseaseMod > .0) {
+            nextHeight = nextHeight - (nextHeight * NowGrainDiseaseMod);
+        }
+
         // DoneComputing barrier:
         #pragma omp barrier
 
@@ -149,6 +164,36 @@ void Grain() {
         // DoneAssigning barrier:
         #pragma omp barrier
 
+        // DonePrinting barrier:
+        #pragma omp barrier
+    }
+}
+
+void Disease() {
+    while(NowYear < 2026) {
+        // compute next Number of Predators
+        int rand = Ranf(&seed, 2, 10);
+        float NextDeerDiseaseMod = 0.0;
+        float NextGrainDiseaseMod = 0.0;
+
+        // If 20% chance (5, 10) to disease deer
+        if (rand % 5 == 0) {
+            NextDeerDiseaseMod = 0.3;
+        }
+
+        // If 10% chance (7) to disease grain
+        else if (rand % 7 == 0) {
+            NextGrainDiseaseMod = 0.4;
+        }
+        
+        // DoneComputing barrier:
+        #pragma omp barrier
+        NowDeerDiseaseMod = NextDeerDiseaseMod;
+        NowGrainDiseaseMod = NextGrainDiseaseMod;
+
+        // DoneAssigning barrier:
+        #pragma omp barrier
+        
         // DonePrinting barrier:
         #pragma omp barrier
     }
@@ -171,12 +216,13 @@ void Watcher() {
         else {
             NowMonth++;
         }
+        NowPrintMonth++;
 
         // Set Next Environment
         setNextEnvironment();
 
-        // Print Results NowNumDeer, NowHeight, NowTemp, NowPrecip
-        printf("%d, %lf, %lf, %lf\n", NowNumDeer, NowHeight, NowTemp, NowPrecip);
+        // Print Results NowNumDeer, NowDeerDiseaseMod in Percent, NowHeight, NowGrainDiseaseMod in Percent, NowTemp in Celsius, NowPrecip
+    printf("%d, %d,%d,%lf,%d,%lf,%lf\n", NowPrintMonth, NowNumDeer, int(NowDeerDiseaseMod * 100), (NowHeight * 2.54),int(NowGrainDiseaseMod * 100),(5./9.)*(NowTemp-32), (NowPrecip * 2.54));
 
         // DonePrinting barrier:
         #pragma omp barrier
@@ -187,20 +233,23 @@ int main() {
 
     // Setup initial Environment variables
     // starting date and time:
-    NowMonth =    0;
+    NowMonth = 0;
+    NowPrintMonth = 0;
     NowYear  = 2020;
 
     // starting state (feel free to change this if you want):
     NowNumDeer = 1;
     NowHeight =  1.;
+    NowDeerDiseaseMod = 0.;
+    NowGrainDiseaseMod = 0.;
 
     // Set initial environment state
     setNextEnvironment();
 
-    printf("NowNumDeer, NowHeight, NowTemp, NowPrecip\n");
-    printf("%d, %lf, %lf, %lf\n", NowNumDeer, NowHeight, NowTemp, NowPrecip);
+    printf("Month,NowNumDeer,NowDeerDiseaseMod,NowHeight,NowGrainDiseaseMod,NowTemp,NowPrecip\n");
+    printf("%d, %d,%d,%lf,%d,%lf,%lf\n", NowPrintMonth, NowNumDeer, int(NowDeerDiseaseMod * 100), (NowHeight * 2.54),int(NowGrainDiseaseMod * 100),(5./9.)*(NowTemp-32), (NowPrecip * 2.54));
 
-    omp_set_num_threads(3);	// same as # of sections
+    omp_set_num_threads(4);	// same as # of sections
     #pragma omp parallel sections
     {
         #pragma omp section
@@ -218,10 +267,10 @@ int main() {
             Watcher();
         }
 
-        // #pragma omp section
-        // {
-        //     MyAgent( );	// your own
-        // }
+        #pragma omp section
+        {
+            Disease();
+        }
     } // implied barrier -- all functions must return in order
 	// to allow any of them to get past here
 }
