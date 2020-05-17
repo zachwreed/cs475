@@ -1,0 +1,16 @@
+#!/bin/csh
+
+#************************************************
+ # Author: Zachary Reed
+ # Description: Project 4 csh proj4.cpp runner
+ # Date: 5/11/2020
+#************************************************
+
+#number of threads:
+echo "Project 4:"
+echo "ArrSize,SIMD MM/s, Non-SIMD MM/s"
+# for each size (1KiB, 2KiB, 4KiB, 8KiB, 16KiB, 32KiB, 64KiB, 256KiB, 512KiB, 1MiB, 2MiB, 4MiB, 8MiB)
+foreach ArrSize (1024 2048 4096 8192 16384 32768 65536 131072 262144 524288 1048576 2097152 4194304 8388608)
+    g++ -DARRSIZE=$ArrSize proj4.cpp -o proj4 -lm -fopenmp
+    ./proj4
+end
