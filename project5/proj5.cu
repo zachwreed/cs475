@@ -1,3 +1,14 @@
+/************************************************
+ * Author: Zachary Reed
+ * Description: Project 5 Source Code
+ * Date: 5/20/2020
+ * References:
+ * 1.) Author: Mike Baily
+ *     Title: OpenMP: CUDA Monte Carlo
+ *     Description: Source code example for Project 5
+ *     Date Accessed: 5/20/2020
+ ************************************************/
+
 // System includes
 #include <stdio.h>
 #include <assert.h>
@@ -102,7 +113,6 @@ __global__ void MonteCarlo(float *Xcs, float *Ycs, float *Rs, int *Hits) {
 
 	// get the outgoing (bounced) vector:
 	float dot = inx*nx + iny*ny;
-	float outx = inx - 2.*nx*dot;	// angle of reflection = angle of incidence`
 	float outy = iny - 2.*ny*dot;	// angle of reflection = angle of incidence`
 
 	// find out if it hits the infinite plate:
@@ -208,7 +218,6 @@ int main(int argc, char* argv[]) {
 	double secondsTotal = 0.001*(double)msecTotal;
 	double trialsPerSecond = (float)NUMTRIALS/secondsTotal;
 	double megaTrialsPerSecond = trialsPerSecond/1000000.;
-	fprintf(stderr, "Number of Trials = %10d, MegaTrials/Second = %10.4lf\n", NUMTRIALS, megaTrialsPerSecond);
 
 	// copy result from the device to the host:
 	status = cudaMemcpy(hHits, dHits, NUMTRIALS *sizeof(int), cudaMemcpyDeviceToHost);
@@ -222,7 +231,8 @@ int main(int argc, char* argv[]) {
 	}
 
 	float probability = 100.f*(float)numHits/(float)NUMTRIALS;
-	fprintf(stderr, "\nProbability = %6.3f %%\n", probability);
+	fprintf(stderr, "%d,%lf,%lf,%lf\n", BLOCKSIZE, NUMTRIALS, megaTrialsPerSecond, probability);
+
 
 	// clean up memory:
 	delete []hXcs;
