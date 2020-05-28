@@ -9,6 +9,6 @@ $ module load slurm
 
 cd to directory
 
-$ ./runproj5.bash
+$ sbatch runproj5.bash
 
 
