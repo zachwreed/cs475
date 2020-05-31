@@ -22,10 +22,11 @@
 #ifndef LOCAL_SIZE
     #define	LOCAL_SIZE 64
 #endif
+ 
 
-#ifndef CL_FUNC 
-	#define CL_FUNC "ArrayMult"
-#endif
+#ifndef PART
+	#define PART 1
+#endif 
 
 #define	NUM_WORK_GROUPS	NUM_ELEMENTS/LOCAL_SIZE
 
@@ -40,9 +41,16 @@ int	LookAtTheBits(float);
 
 
 int main(int argc, char *argv[]) {
+
+	char *CL_FUNC1 = (char *)"ArrayMult";
+	char *CL_FUNC2 = (char *)"ArrayMultAdd";
+
+	FILE *fp;
+	bool isSum = false;
+	char *funcName; 
+
 	// see if we can even open the opencl kernel program
 	// (no point going on if we can't):
-	FILE *fp;
     #ifdef WIN32
         errno_t err = fopen_s(&fp, CL_FILE_NAME, "r");
         if(err != 0)
@@ -54,6 +62,30 @@ int main(int argc, char *argv[]) {
             fprintf(stderr, "Cannot open OpenCL source file '%s'\n", CL_FILE_NAME);
             return 1;
         }
+
+	// Sets up variables for the three parts required in the project specifications
+	int part = PART;
+	switch (part) {
+		// D[gid] = A[gid] * B[gid];
+		case 1:
+			funcName = CL_FUNC1;
+			break;
+
+		// D[gid] = (A[gid] * B[gid]) + C[gid];
+		case 2:
+			funcName = CL_FUNC2;
+			break;
+
+		// Summation{A[:]*B[:]};
+		case 3:
+			funcName = CL_FUNC1;
+			isSum = true;
+			break;
+
+		default:
+			funcName = CL_FUNC1;
+			break;
+	}
 
 	// returned status from opencl calls
 	cl_int status;
@@ -69,7 +101,6 @@ int main(int argc, char *argv[]) {
     }
 	
 	// get the device id:
-
 	cl_device_id device;
 	status = clGetDeviceIDs( platform, CL_DEVICE_TYPE_GPU, 1, &device, NULL );
 	if(status != CL_SUCCESS)
@@ -79,10 +110,12 @@ int main(int argc, char *argv[]) {
 	float *hA = new float[ NUM_ELEMENTS ];
 	float *hB = new float[ NUM_ELEMENTS ];
 	float *hC = new float[ NUM_ELEMENTS ];
+	float *hD = new float[ NUM_ELEMENTS ];
+	float sum = 0;
 
 	// fill the host memory buffers:
 	for(int i = 0; i < NUM_ELEMENTS; i++) {
-		hA[i] = hB[i] = (float)sqrt((double)i);
+		hA[i] = hB[i] = hD[i] = (float)sqrt((double)i);
 	}
 
 	size_t dataSize = NUM_ELEMENTS * sizeof(float);
@@ -115,16 +148,35 @@ int main(int argc, char *argv[]) {
 		fprintf(stderr, "clCreateBuffer failed (3)\n");
     }
 
+	// Add dD for second part
+	cl_mem dD;
+	if(part == 2) {
+		dD = clCreateBuffer(context, CL_MEM_WRITE_ONLY, dataSize, NULL, &status );
+		if(status != CL_SUCCESS) {
+			fprintf(stderr, "clCreateBuffer failed (3)\n");
+		}
+	}
+
+
 	// 6. enqueue the 2 commands to write the data from the host buffers to the device buffers:
 	status = clEnqueueWriteBuffer(cmdQueue, dA, CL_FALSE, 0, dataSize, hA, 0, NULL, NULL);
 	if(status != CL_SUCCESS) {
-		fprintf( stderr, "clEnqueueWriteBuffer failed (1)\n" );
+		fprintf(stderr, "clEnqueueWriteBuffer failed (1)\n");
     }
 
 	status = clEnqueueWriteBuffer(cmdQueue, dB, CL_FALSE, 0, dataSize, hB, 0, NULL, NULL);
 	if(status != CL_SUCCESS) {
-		fprintf( stderr, "clEnqueueWriteBuffer failed (2)\n" );
+		fprintf(stderr, "clEnqueueWriteBuffer failed (2)\n");
     }
+
+	// Add dD for second part
+	if(part == 2) {
+		status = clEnqueueWriteBuffer(cmdQueue, dD, CL_FALSE, 0, dataSize, hD, 0, NULL, NULL);
+		if(status != CL_SUCCESS) {
+			fprintf(stderr, "clEnqueueWriteBuffer failed (2)\n");
+		}
+	}
+
 
 	Wait(cmdQueue);
 
@@ -164,7 +216,7 @@ int main(int argc, char *argv[]) {
 	}
 	// -------------------------------------------------------------------
 	// 9. create the kernel object:
-	cl_kernel kernel = clCreateKernel(program, CL_FUNC, &status);
+	cl_kernel kernel = clCreateKernel(program, funcName, &status);
 	if(status != CL_SUCCESS) {
 		fprintf(stderr, "clCreateKernel failed\n");
     }
@@ -185,6 +237,14 @@ int main(int argc, char *argv[]) {
 		fprintf(stderr, "clSetKernelArg failed (3)\n");
     }
 
+	// Add dD to kernel args
+	if (part == 2) {
+		status = clSetKernelArg(kernel, 3, sizeof(cl_mem), &dD);
+		if(status != CL_SUCCESS) {
+			fprintf(stderr, "clSetKernelArg failed (3)\n");
+    	}
+	}
+
 	// 11. enqueue the kernel object for execution:
 	size_t globalWorkSize[3] = {NUM_ELEMENTS, 1, 1};
 	size_t localWorkSize[3]  = {LOCAL_SIZE, 1, 1};
@@ -199,16 +259,24 @@ int main(int argc, char *argv[]) {
 		fprintf( stderr, "clEnqueueNDRangeKernel failed: %d\n", status );
 
 	Wait(cmdQueue);
-	double time1 = omp_get_wtime();
 
 	// 12. read the results buffer back from the device to the host:
 	status = clEnqueueReadBuffer(cmdQueue, dC, CL_TRUE, 0, dataSize, hC, 0, NULL, NULL);
 	if(status != CL_SUCCESS) {
-			fprintf(stderr, "clEnqueueReadBuffer failed\n");
+		fprintf(stderr, "clEnqueueReadBuffer failed\n");
 	}
 
+	// Sum results if summation case
+	if (isSum) {
+		for (int i = 0; i < NUM_ELEMENTS; i++) {
+			sum += hC[i];
+		}
+	}
 
-	fprintf(stderr, "%4d\t%10d\t%10.3lf GigaMultsPerSecond\n", LOCAL_SIZE, NUM_WORK_GROUPS, (double)NUM_ELEMENTS/(time1-time0)/1000000000.);
+	double time1 = omp_get_wtime();
+
+	// Output results
+	fprintf(stdout, "%d,%d,%lf\n", LOCAL_SIZE, NUM_WORK_GROUPS, (double)NUM_ELEMENTS/(time1-time0)/1000000.);
 
     #ifdef WIN32
         Sleep( 2000 );
