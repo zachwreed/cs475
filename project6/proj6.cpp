@@ -1,4 +1,13 @@
-// 1. Program header
+/************************************************
+ * Author: Zachary Reed
+ * Description: Project 6 Source Code
+ * Date: 5/31/2020
+ * References:
+ * 1.) Author: Mike Baily
+ *     Title: OpenMP: OpenCL Array Multiply, Multiply-Add, and Multiply-Reduce
+ *     Description: Source code example for Project 6
+ *     Date Accessed: 5/31/2020
+ ************************************************/
 
 #include <stdio.h>
 #include <math.h>
@@ -261,13 +270,14 @@ int main(int argc, char *argv[]) {
 	Wait(cmdQueue);
 
 	// 12. read the results buffer back from the device to the host:
-	status = clEnqueueReadBuffer(cmdQueue, dC, CL_TRUE, 0, dataSize, hC, 0, NULL, NULL);
-	if(status != CL_SUCCESS) {
-		fprintf(stderr, "clEnqueueReadBuffer failed\n");
-	}
-
 	// Sum results if summation case
 	if (isSum) {
+
+		status = clEnqueueReadBuffer(cmdQueue, dC, CL_TRUE, 0, dataSize, hC, 0, NULL, NULL);
+		if(status != CL_SUCCESS) {
+			fprintf(stderr, "clEnqueueReadBuffer failed\n");
+		}
+
 		for (int i = 0; i < NUM_ELEMENTS; i++) {
 			sum += hC[i];
 		}
@@ -275,8 +285,15 @@ int main(int argc, char *argv[]) {
 
 	double time1 = omp_get_wtime();
 
+	if (!isSum) {
+		status = clEnqueueReadBuffer(cmdQueue, dC, CL_TRUE, 0, dataSize, hC, 0, NULL, NULL);
+		if(status != CL_SUCCESS) {
+			fprintf(stderr, "clEnqueueReadBuffer failed\n");
+		}
+	}
+
 	// Output results
-	fprintf(stdout, "%d,%d,%lf\n", LOCAL_SIZE, NUM_WORK_GROUPS, (double)NUM_ELEMENTS/(time1-time0)/1000000.);
+	fprintf(stdout, "%d,%d,%lf\n", LOCAL_SIZE, NUM_ELEMENTS, (double)NUM_ELEMENTS/(time1-time0)/1000000.);
 
     #ifdef WIN32
         Sleep( 2000 );

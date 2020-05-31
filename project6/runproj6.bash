@@ -1,5 +1,11 @@
 #!/bin/bash
 
+#************************************************
+ # Author: Zachary Reed
+ # Description: Project 6 bash runner
+ # Date: 5/31/2020
+#************************************************
+
 #SBATCH -J proj6
 #SBATCH -A cs475-575
 #SBATCH -p class
@@ -15,7 +21,7 @@ for part in {1..3}
 do  
     echo "--------------------------------------------"
     echo "Part $part"
-    echo "Local Size,Work Groups,MegaPerformance"
+    echo "Local Size,Array Size,MegaPerformance"
 
     if [ "$part" -eq 3 ]; then
         for numElements in 1024 2048 4096 8192 16384 32768 65536 131072 262144 524288 1048576 2097152 4194304 8388608
@@ -25,7 +31,7 @@ do
         done
 
     else
-        for localS in 32 64 128 256
+        for localS in 8 16 32 64 128 256 512
         do  
             # for 1KiB, 2KiB, 4KiB, 8KiB, 16KiB, 32KiB, 64KiB, 128KiB, 256KiB, 512KiB, 1MiB, 2 MiB, 4MiB, 8MiB
             for numElements in 1024 2048 4096 8192 16384 32768 65536 131072 262144 524288 1048576 2097152 4194304 8388608
