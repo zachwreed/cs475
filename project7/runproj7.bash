@@ -15,7 +15,8 @@
 #SBATCH --mail-type=END
 #SBATCH --mail-user=reedz@oregonstate.edu
 
-# local work size, divisible by 32 to fill warp
-
-g++ -o proj7 proj7.cpp /usr/local/apps/cuda/cuda-10.1/lib64/libOpenCL.so.1.1 -lm -fopenmp
-./proj7
+for func in {0..2}
+do 
+    g++ -DFUNC_TYPE=$func -o proj7 proj7.cpp /usr/local/apps/cuda/cuda-10.1/lib64/libOpenCL.so.1.1 -lm -fopenmp
+    ./proj7
+done

@@ -27,6 +27,10 @@ const char *CL_FILE_FUNC = {"AutoCorrelate"};
         #define LOCAL_SIZE 64
 #endif
 
+#ifndef FUNC_TYPE
+        #define FUNC_TYPE 1
+#endif
+
 void Wait(cl_command_queue);
 
 
@@ -214,7 +218,7 @@ void OpenCLAutoCorrelate(float *hSums, float *hA, int Size) {
 
 
     // Read hSum back from dSum
-    status = clEnqueueReadBuffer(cmdQueue, dSums, CL_TRUE, 0, Size, hSums, 0, NULL, NULL);
+    status = clEnqueueReadBuffer(cmdQueue, dSums, CL_TRUE, 0, 1*Size*sizeof(cl_float), hSums, 0, NULL, NULL);
 	if(status != CL_SUCCESS) {
 			fprintf(stderr, "clEnqueueReadBuffer failed\n");
             return;
@@ -230,6 +234,16 @@ void OpenCLAutoCorrelate(float *hSums, float *hA, int Size) {
 	clReleaseMemObject(dA);
 	clReleaseMemObject(dSums);
 
+}
+
+void AutoCorrelate(float *Sums, float *A, int Size) {
+    for(int shift = 0; shift < Size; shift++) {
+        float sum = 0.;
+        for(int i = 0; i < Size; i++) {
+            sum += A[i] * A[i + shift];
+        }
+        Sums[shift] = sum;	// note the "fix #2" from false sharing if you are using OpenMP
+    }
 }
 
 int main(int argc, char *argv[]) {
@@ -251,7 +265,24 @@ int main(int argc, char *argv[]) {
     }
     fclose(fp);
 
-    OpenCLAutoCorrelate(Sums, A, Size);
+
+    int func = FUNC_TYPE;
+    switch(func) {
+        // Non-Parallel Implementation
+        case 0:
+            AutoCorrelate(Sums, A, Size);
+        break;
+
+        // OpenCL Implementation
+        case 1:
+            OpenCLAutoCorrelate(Sums, A, Size);
+        break;
+
+        // SIMD Implementation
+        case 2:
+            SIMDimdAutoCorrelate(Sums, A, Size);
+        break;
+    }
 
     for(int i = 0; i < Size; i++) {
         fprintf(stdout, "Sum [%d] = %lf'\n", i, Sums[i]);
