@@ -12,7 +12,7 @@
 #SBATCH --gres=gpu:1
 #SBATCH -o proj6.out
 #SBATCH -e proj6.err
-#SBATCH --mail-type=BEGIN,END,FAIL
+#SBATCH --mail-type=END
 #SBATCH --mail-user=reedz@oregonstate.edu
 
 # local work size, divisible by 32 to fill warp

@@ -201,11 +201,11 @@ int main(int argc, char *argv[]) {
 	if(n != fileSize) {
 		fprintf(stderr, "Expected to read %d bytes read from '%s' -- actually read %d.\n", fileSize, CL_FILE_NAME, n);
     }
-	// create the text for the kernel program:
 
+	// create the text for the kernel program:
 	char *strings[1];
 	strings[0] = clProgramText;
-	cl_program program = clCreateProgramWithSource( context, 1, (const char **)strings, NULL, &status );
+	cl_program program = clCreateProgramWithSource( context, 1, (const char **)strings, NULL, &status);
 	
     if(status != CL_SUCCESS) {
 		fprintf(stderr, "clCreateProgramWithSource failed\n");

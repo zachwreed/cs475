@@ -24,7 +24,7 @@ const char *CL_FILE_FUNC = {"AutoCorrelate"};
 
 // Define Num Threads for OpenMP Implementation
 #ifndef LOCAL_SIZE
-        #define LOCAL_SIZE 32
+        #define LOCAL_SIZE 64
 #endif
 
 void Wait(cl_command_queue);
@@ -68,7 +68,7 @@ void OpenMPAutoCorrelate(float *Sums, float A[], int Size) {
     }
 }
 
-void OpenCLAutoCorrelate(float *hSums, float *hA[], int Size) {
+void OpenCLAutoCorrelate(float *hSums, float *hA, int Size) {
 
     FILE *fp;
     cl_int status;
@@ -123,13 +123,13 @@ void OpenCLAutoCorrelate(float *hSums, float *hA[], int Size) {
     cl_mem dSums = clCreateBuffer(context, CL_MEM_WRITE_ONLY, 1*Size*sizeof(cl_float), NULL, &status);
 
     // Enqueue the 2 commands to write the data from the host buffers to the device buffers:
-	status = clEnqueueWriteBuffer(cmdQueue, dA, CL_FALSE, 0, Size, hA, 0, NULL, NULL);
+	status = clEnqueueWriteBuffer(cmdQueue, dA, CL_FALSE, 0, 2*Size*sizeof(cl_float), hA, 0, NULL, NULL);
 	if(status != CL_SUCCESS) {
 		fprintf(stderr, "clEnqueueWriteBuffer failed (1)\n");
         return;
     }
 
-	status = clEnqueueWriteBuffer(cmdQueue, dSums, CL_FALSE, 0, 2*Size, hSums, 0, NULL, NULL);
+	status = clEnqueueWriteBuffer(cmdQueue, dSums, CL_FALSE, 0, 1*Size*sizeof(cl_float), hSums, 0, NULL, NULL);
 	if(status != CL_SUCCESS) {
 		fprintf(stderr, "clEnqueueWriteBuffer failed (2)\n");
         return;
@@ -210,6 +210,9 @@ void OpenCLAutoCorrelate(float *hSums, float *hA[], int Size) {
         return;
     }
 
+    Wait(cmdQueue);
+
+
     // Read hSum back from dSum
     status = clEnqueueReadBuffer(cmdQueue, dSums, CL_TRUE, 0, Size, hSums, 0, NULL, NULL);
 	if(status != CL_SUCCESS) {
@@ -217,12 +220,16 @@ void OpenCLAutoCorrelate(float *hSums, float *hA[], int Size) {
             return;
 	}
 
+    Wait(cmdQueue);
+
+
     // Clean everything up:
 	clReleaseKernel(kernel);
 	clReleaseProgram(program);
 	clReleaseCommandQueue(cmdQueue);
 	clReleaseMemObject(dA);
 	clReleaseMemObject(dSums);
+
 }
 
 int main(int argc, char *argv[]) {
@@ -244,7 +251,7 @@ int main(int argc, char *argv[]) {
     }
     fclose(fp);
 
-    OpenCLAutoCorrelate(Sums, &A, Size);
+    OpenCLAutoCorrelate(Sums, A, Size);
 
     for(int i = 0; i < Size; i++) {
         fprintf(stdout, "Sum [%d] = %lf'\n", i, Sums[i]);

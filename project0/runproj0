@@ -6,3 +6,4 @@ foreach t ( 1 4 )
 	g++ -DNUMT=$t proj0.cpp -o proj0 -lm -fopenmp
 	./proj0
 end
+
