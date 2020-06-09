@@ -2,8 +2,8 @@
 
 #************************************************
  # Author: Zachary Reed
- # Description: Project 6 bash runner
- # Date: 5/31/2020
+ # Description: Project 7 bash runner
+ # Date: 6/8/2020
 #************************************************
 
 #SBATCH -J proj7
@@ -15,8 +15,8 @@
 #SBATCH --mail-type=END
 #SBATCH --mail-user=reedz@oregonstate.edu
 
-for func in {0..2}
-do 
-    g++ -DFUNC_TYPE=$func -o proj7 proj7.cpp /usr/local/apps/cuda/cuda-10.1/lib64/libOpenCL.so.1.1 -lm -fopenmp
+for func in {0..3}
+do
+    g++ -DFUNC_TYPE=$func proj7.cpp -o proj7 /usr/local/apps/cuda/cuda-10.1/lib64/libOpenCL.so.1.1 -lm -fopenmp
     ./proj7
 done
